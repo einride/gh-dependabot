@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"sort"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/shurcooL/githubv4"
@@ -51,6 +52,9 @@ func main() {
 				pullRequests = append(pullRequests, nextPage.PullRequests...)
 				page = nextPage
 			}
+			sort.Slice(pullRequests, func(i, j int) bool {
+				return pullRequests[i].updatedAt.Before(pullRequests[j].updatedAt)
+			})
 			return tea.NewProgram(newModel(client, query, pullRequests), tea.WithAltScreen()).Start()
 		},
 	}
