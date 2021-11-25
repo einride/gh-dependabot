@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/einride/gh-dependabot/internal/gh"
 	"github.com/shurcooL/githubv4"
 )
 
@@ -98,7 +99,7 @@ func (m model) View() string {
 
 func (m model) mergePullRequest(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
-		result, err := gh("pr", "review", "--approve", "--body", "@dependabot merge", pr.url)
+		result, err := gh.Run("pr", "review", "--approve", "--body", "@dependabot merge", pr.url)
 		return mergePullRequestMessage{
 			pr:     pr,
 			result: result,
