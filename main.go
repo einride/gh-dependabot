@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/einride/gh-dependabot/internal/gh"
 	"github.com/shurcooL/githubv4"
 	"github.com/spf13/cobra"
 )
@@ -13,7 +14,7 @@ import (
 func main() {
 	log.SetFlags(0)
 	client := githubv4.NewClient(&http.Client{
-		Transport: ghRoundTripper{},
+		Transport: gh.NewGraphQLRoundTripper(),
 	})
 	var org string
 	var team string
@@ -23,7 +24,7 @@ func main() {
 		Example: "gh dependabot --org einride",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log.Println("Resolving current user...")
-			username, err := gh("api", "graphql", "-f", "query={viewer{login}}", "--jq", ".data.viewer.login")
+			username, err := gh.Run("api", "graphql", "-f", "query={viewer{login}}", "--jq", ".data.viewer.login")
 			if err != nil {
 				return err
 			}
