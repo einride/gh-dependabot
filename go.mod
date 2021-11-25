@@ -1,4 +1,4 @@
-module go.einride.tech/gh-dependabot
+module github.com/einride/gh-dependabot
 
 go 1.17
 
