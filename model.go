@@ -78,8 +78,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, m.listModel.NewStatusMessage("Approved "+msg.pr.url))
 		}
 	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, m.keyMap.merge):
+		if key.Matches(msg, m.keyMap.merge) {
 			selectedItem := m.listModel.SelectedItem().(pullRequest)
 			m.listModel.RemoveItem(m.listModel.Index())
 			cmds = append(cmds, m.listModel.StartSpinner())

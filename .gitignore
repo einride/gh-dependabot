@@ -1,1 +1,4 @@
 .idea
+.tools/*/*/
+.build/
+node_modules/
