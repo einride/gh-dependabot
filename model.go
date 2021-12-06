@@ -15,7 +15,8 @@ import (
 var appStyle = lipgloss.NewStyle().Padding(1, 2)
 
 type keyMap struct {
-	merge key.Binding
+	merge  key.Binding
+	browse key.Binding // open PR in default browser.
 }
 
 func newKeyMap() *keyMap {
@@ -24,12 +25,17 @@ func newKeyMap() *keyMap {
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "merge"),
 		),
+		browse: key.NewBinding(
+			key.WithKeys("b"),
+			key.WithHelp("b", "open in browser"),
+		),
 	}
 }
 
 func (d keyMap) Bindings() []key.Binding {
 	return []key.Binding{
 		d.merge,
+		d.browse,
 	}
 }
 
@@ -43,9 +49,9 @@ var _ tea.Model = model{}
 
 func newModel(client *githubv4.Client, query pullRequestQuery, pullRequests []pullRequest) model {
 	keyMap := newKeyMap()
-	items := make([]list.Item, 0, len(pullRequests))
-	for _, pr := range pullRequests {
-		items = append(items, pr)
+	items := make([]list.Item, len(pullRequests))
+	for i, pr := range pullRequests {
+		items[i] = pr
 	}
 	listModel := list.NewModel(items, list.NewDefaultDelegate(), 0, 0)
 	listModel.Title = fmt.Sprintf("Pull Requests | %s", query.Filter())
@@ -78,12 +84,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			cmds = append(cmds, m.listModel.NewStatusMessage("Approved "+msg.pr.url))
 		}
+	case openInBrowserMessage:
+		if msg.err != nil {
+			cmds = append(cmds, m.listModel.NewStatusMessage(msg.err.Error()))
+		} else {
+			cmds = append(cmds, m.listModel.NewStatusMessage("opened "+msg.pr.url))
+		}
 	case tea.KeyMsg:
 		if key.Matches(msg, m.keyMap.merge) {
 			selectedItem := m.listModel.SelectedItem().(pullRequest)
 			m.listModel.RemoveItem(m.listModel.Index())
 			cmds = append(cmds, m.listModel.StartSpinner())
 			cmds = append(cmds, m.mergePullRequest(selectedItem))
+		} else if key.Matches(msg, m.keyMap.browse) {
+			selectedItem := m.listModel.SelectedItem().(pullRequest)
+			cmds = append(cmds, m.openInBrowser(selectedItem))
 		}
 	}
 	newListModel, cmd := m.listModel.Update(msg)
@@ -108,7 +123,24 @@ func (m model) mergePullRequest(pr pullRequest) tea.Cmd {
 	}
 }
 
+func (m model) openInBrowser(pr pullRequest) tea.Cmd {
+	return func() tea.Msg {
+		result, err := gh.Run("pr", "view", "--web", pr.url)
+		return openInBrowserMessage{
+			pr:     pr,
+			result: result,
+			err:    err,
+		}
+	}
+}
+
 type mergePullRequestMessage struct {
+	pr     pullRequest
+	result string
+	err    error
+}
+
+type openInBrowserMessage struct {
 	pr     pullRequest
 	result string
 	err    error
