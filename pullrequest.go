@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/shurcooL/githubv4"
 )
 
@@ -31,7 +32,20 @@ func (p pullRequest) Title() string {
 
 // Description implements list.DefaultItem.
 func (p pullRequest) Description() string {
-	return fmt.Sprintf("%s %s %s %s", checkStatusEmoji(p.checkStatus), p.title, p.mergeable, p.reviewDecision)
+	result := fmt.Sprintf("%s %s", checkStatusEmoji(p.checkStatus), p.title)
+	switch p.mergeable {
+	case "", githubv4.MergeableStateMergeable: // do nothing
+	default:
+		result += " [" + lipgloss.NewStyle().Foreground(lipgloss.Color("11")).Render(string(p.mergeable)) + "]"
+	}
+	switch p.reviewDecision {
+	case "", githubv4.PullRequestReviewDecisionReviewRequired: // do nothing
+	case githubv4.PullRequestReviewDecisionApproved:
+		result += " [" + lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Render(string(p.reviewDecision)) + "]"
+	default:
+		result += " [" + lipgloss.NewStyle().Foreground(lipgloss.Color("11")).Render(string(p.reviewDecision)) + "]"
+	}
+	return result
 }
 
 // FilterValue implements list.DefaultItem.
@@ -42,13 +56,13 @@ func (p pullRequest) FilterValue() string {
 func checkStatusEmoji(c githubv4.StatusState) string {
 	switch c {
 	case githubv4.StatusStateSuccess:
-		return "✓"
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Render("✓")
 	case githubv4.StatusStateFailure:
-		return "✘"
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render("✘")
 	case githubv4.StatusStatePending:
-		return "…️"
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("11")).Render("…")
 	default:
-		return "?"
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("11")).Render("?")
 	}
 }
 
