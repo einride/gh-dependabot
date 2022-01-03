@@ -16,6 +16,7 @@ var appStyle = lipgloss.NewStyle().Padding(1, 2)
 
 type keyMap struct {
 	merge  key.Binding
+	rebase key.Binding
 	browse key.Binding // open PR in default browser.
 }
 
@@ -24,6 +25,10 @@ func newKeyMap() *keyMap {
 		merge: key.NewBinding(
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "merge"),
+		),
+		rebase: key.NewBinding(
+			key.WithKeys("r"),
+			key.WithHelp("r", "rebase"),
 		),
 		browse: key.NewBinding(
 			key.WithKeys("b"),
@@ -35,6 +40,7 @@ func newKeyMap() *keyMap {
 func (d keyMap) Bindings() []key.Binding {
 	return []key.Binding{
 		d.merge,
+		d.rebase,
 		d.browse,
 	}
 }
@@ -84,6 +90,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			cmds = append(cmds, m.listModel.NewStatusMessage("Approved "+msg.pr.url))
 		}
+	case rebasePullRequestMessage:
+		m.listModel.StopSpinner()
+		if msg.err != nil {
+			cmds = append(cmds, m.listModel.NewStatusMessage(msg.err.Error()))
+		} else {
+			cmds = append(cmds, m.listModel.NewStatusMessage("Rebasing "+msg.pr.url))
+		}
 	case openInBrowserMessage:
 		if msg.err != nil {
 			cmds = append(cmds, m.listModel.NewStatusMessage(msg.err.Error()))
@@ -91,12 +104,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, m.listModel.NewStatusMessage("opened "+msg.pr.url))
 		}
 	case tea.KeyMsg:
-		if key.Matches(msg, m.keyMap.merge) {
+		switch {
+		case key.Matches(msg, m.keyMap.merge):
 			selectedItem := m.listModel.SelectedItem().(pullRequest)
 			m.listModel.RemoveItem(m.listModel.Index())
 			cmds = append(cmds, m.listModel.StartSpinner())
 			cmds = append(cmds, m.mergePullRequest(selectedItem))
-		} else if key.Matches(msg, m.keyMap.browse) {
+		case key.Matches(msg, m.keyMap.rebase):
+			selectedItem := m.listModel.SelectedItem().(pullRequest)
+			m.listModel.RemoveItem(m.listModel.Index())
+			cmds = append(cmds, m.listModel.StartSpinner())
+			cmds = append(cmds, m.rebasePullRequest(selectedItem))
+		case key.Matches(msg, m.keyMap.browse):
 			selectedItem := m.listModel.SelectedItem().(pullRequest)
 			cmds = append(cmds, m.openInBrowser(selectedItem))
 		}
@@ -123,6 +142,17 @@ func (m model) mergePullRequest(pr pullRequest) tea.Cmd {
 	}
 }
 
+func (m model) rebasePullRequest(pr pullRequest) tea.Cmd {
+	return func() tea.Msg {
+		result, err := gh.Run("pr", "comment", "--body", "@dependabot rebase", pr.url)
+		return rebasePullRequestMessage{
+			pr:     pr,
+			result: result,
+			err:    err,
+		}
+	}
+}
+
 func (m model) openInBrowser(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
 		result, err := gh.Run("pr", "view", "--web", pr.url)
@@ -135,6 +165,12 @@ func (m model) openInBrowser(pr pullRequest) tea.Cmd {
 }
 
 type mergePullRequestMessage struct {
+	pr     pullRequest
+	result string
+	err    error
+}
+
+type rebasePullRequestMessage struct {
 	pr     pullRequest
 	result string
 	err    error
