@@ -131,7 +131,7 @@ func loadPullRequestPage(client *githubv4.Client, prQuery pullRequestQuery) (*pu
 	}
 	variables := map[string]interface{}{
 		"searchQuery": githubv4.String(prQuery.SearchQuery()),
-		"first":       githubv4.Int(100),
+		"first":       githubv4.Int(25),
 	}
 	var search searchQuery
 	if prQuery.cursor == "" {
