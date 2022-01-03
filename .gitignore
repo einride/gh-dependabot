@@ -1,4 +1,4 @@
-.idea
-.tools/*/*/
+.idea/
+.tools/
 .build/
-node_modules/
+.mage/gen/
