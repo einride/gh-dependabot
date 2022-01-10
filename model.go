@@ -12,6 +12,7 @@ import (
 	"github.com/shurcooL/githubv4"
 )
 
+//nolint: gochecknoglobals
 var appStyle = lipgloss.NewStyle().Padding(1, 2)
 
 type keyMap struct {
@@ -106,18 +107,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keyMap.merge):
-			selectedItem := m.listModel.SelectedItem().(pullRequest)
-			m.listModel.RemoveItem(m.listModel.Index())
-			cmds = append(cmds, m.listModel.StartSpinner())
-			cmds = append(cmds, m.mergePullRequest(selectedItem))
+			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				m.listModel.RemoveItem(m.listModel.Index())
+				cmds = append(cmds, m.listModel.StartSpinner())
+				cmds = append(cmds, m.mergePullRequest(selectedItem))
+			}
 		case key.Matches(msg, m.keyMap.rebase):
-			selectedItem := m.listModel.SelectedItem().(pullRequest)
-			m.listModel.RemoveItem(m.listModel.Index())
-			cmds = append(cmds, m.listModel.StartSpinner())
-			cmds = append(cmds, m.rebasePullRequest(selectedItem))
+			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				m.listModel.RemoveItem(m.listModel.Index())
+				cmds = append(cmds, m.listModel.StartSpinner())
+				cmds = append(cmds, m.rebasePullRequest(selectedItem))
+			}
 		case key.Matches(msg, m.keyMap.browse):
-			selectedItem := m.listModel.SelectedItem().(pullRequest)
-			cmds = append(cmds, m.openInBrowser(selectedItem))
+			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				cmds = append(cmds, m.openInBrowser(selectedItem))
+			}
 		}
 	}
 	newListModel, cmd := m.listModel.Update(msg)
