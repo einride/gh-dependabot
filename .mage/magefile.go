@@ -5,6 +5,11 @@ package main
 
 import (
 	"github.com/magefile/mage/mg"
+	"go.einride.tech/mage-tools/mgmake"
+	"go.einride.tech/mage-tools/mgpath"
+
+	// mage:import
+	"go.einride.tech/mage-tools/targets/mgconvco"
 
 	// mage:import
 	"go.einride.tech/mage-tools/targets/mggo"
@@ -16,15 +21,21 @@ import (
 	"go.einride.tech/mage-tools/targets/mggoreview"
 
 	// mage:import
-	"go.einride.tech/mage-tools/targets/mgcocogitto"
-
-	// mage:import
 	"go.einride.tech/mage-tools/targets/mggitverifynodiff"
 )
 
+func init() {
+	mgmake.GenerateMakefiles(
+		mgmake.Makefile{
+			Path:          mgpath.FromGitRoot("Makefile"),
+			DefaultTarget: All,
+		},
+	)
+}
+
 func All() {
 	mg.Deps(
-		mgcocogitto.CogCheck,
+		mg.F(mgconvco.ConvcoCheck, "origin/master..HEAD"),
 		mggolangcilint.GolangciLint,
 		mggoreview.Goreview,
 		mggo.GoTest,
