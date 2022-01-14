@@ -6,5 +6,5 @@ github.com/iancoleman/strcase v0.2.0 h1:05I4QRnGpI0m37iZQRuskXh+w77mr6Z41lwQzuHL
 github.com/iancoleman/strcase v0.2.0/go.mod h1:iwCmte+B7n89clKwxIoIXy/HfoL7AsD47ZCWhYzw7ho=
 github.com/magefile/mage v1.12.1 h1:oGdAbhIUd6iKamKlDGVtU6XGdy5SgNuCWn7gCTgHDtU=
 github.com/magefile/mage v1.12.1/go.mod h1:z5UZb/iS3GoOSn0JgWuiw7dxlurVYTu+/jHXqQg881A=
-go.einride.tech/mage-tools v0.15.0 h1:oC3YX7+ccDXZbSrgN/+ae9YoS436DEdIWuGsW8KUq+U=
-go.einride.tech/mage-tools v0.15.0/go.mod h1:Z6r1+t7AAzM8G59LtsD8nM4anNGDHyo2lioYRXL8Ggs=
+go.einride.tech/mage-tools v0.17.0 h1:2TgDv0KukR61WbAk+AWz6vBkb7E1ryMYc37zcgelvPw=
+go.einride.tech/mage-tools v0.17.0/go.mod h1:Z6r1+t7AAzM8G59LtsD8nM4anNGDHyo2lioYRXL8Ggs=
