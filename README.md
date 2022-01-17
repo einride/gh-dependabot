@@ -1,26 +1,23 @@
-# gh-dependabot
+gh-dependabot
+=============
 
-A [GitHub CLI][gh-cli] extension to quickly review and approve
-[Dependabot][dependabot] PRs.
+A [GitHub CLI](https://github.com/cli/cli) extension to quickly review and approve [Dependabot](https://github.blog/2020-06-01-keep-all-your-packages-up-to-date-with-dependabot/) PRs.
 
-[gh-cli]: https://github.com/cli/cli
-[dependabot]: https://github.blog/2020-06-01-keep-all-your-packages-up-to-date-with-dependabot/
+Installation
+------------
 
-## Installation
+This extension is developed and tested against a minimum version (2.2.0) of the [GitHub CLI](https://github.com/cli/cli).
 
-This extension is developed and tested against a minimum version (2.2.0) of the [GitHub CLI][gh-cli].
+1.	Install the `gh cli` - see the [installation instructions](https://github.com/cli/cli#installation)
 
-1. Install the `gh cli` - see the [installation instructions][cli-installation]
+2.	Install this extension:
 
-2. Install this extension:
+	```sh
+	gh extension install einride/gh-dependabot
+	```
 
-```sh
-gh extension install einride/gh-dependabot
-```
-
-[cli-installation]: https://github.com/cli/cli#installation
-
-## Usage
+Usage
+-----
 
 ```
  $ gh dependabot --help
