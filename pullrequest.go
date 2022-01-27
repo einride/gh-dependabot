@@ -170,8 +170,8 @@ func loadPullRequestPage(client *githubv4.Client, prQuery pullRequestQuery) (*pu
 			reviewDecision: node.PullRequest.ReviewDecision,
 		})
 		if len(node.PullRequest.Commits.Nodes) > 0 {
-			page.PullRequests[len(page.PullRequests)-1].checkStatus =
-				node.PullRequest.Commits.Nodes[0].Commit.StatusCheckRollup.State
+			state := node.PullRequest.Commits.Nodes[0].Commit.StatusCheckRollup.State
+			page.PullRequests[len(page.PullRequests)-1].checkStatus = state
 		}
 	}
 	return &page, nil
