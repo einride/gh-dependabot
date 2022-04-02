@@ -137,7 +137,15 @@ func (m model) View() string {
 
 func (m model) mergePullRequest(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
-		result, err := gh.Run("pr", "review", "--approve", "--body", "@dependabot merge", pr.url)
+		result, err := gh.Run("pr", "review", "--approve", pr.url)
+		if err != nil {
+			return mergePullRequestMessage{
+				pr:     pr,
+				result: result,
+				err:    err,
+			}
+		}
+		result, err = gh.Run("pr", "merge", "--auto", "--rebase", pr.url)
 		return mergePullRequestMessage{
 			pr:     pr,
 			result: result,
