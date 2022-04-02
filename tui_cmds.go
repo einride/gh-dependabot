@@ -50,3 +50,21 @@ func openInBrowser(pr pullRequest) tea.Cmd {
 		return pullRequestOpenedInBrowser{pr: pr}
 	}
 }
+
+type hidePullRequestDetails struct{}
+
+func hidePullRequestDetailsCmd() tea.Cmd {
+	return func() tea.Msg {
+		return hidePullRequestDetails{}
+	}
+}
+
+type viewPullRequestDetails struct {
+	pr pullRequest
+}
+
+func viewPullRequestDetailsCmd(pr pullRequest) tea.Cmd {
+	return func() tea.Msg {
+		return viewPullRequestDetails{pr: pr}
+	}
+}
