@@ -56,7 +56,7 @@ func main() {
 			sort.Slice(pullRequests, func(i, j int) bool {
 				return pullRequests[i].updatedAt.Before(pullRequests[j].updatedAt)
 			})
-			return tea.NewProgram(newModel(client, query, pullRequests), tea.WithAltScreen()).Start()
+			return tea.NewProgram(newApp(client, query, pullRequests), tea.WithAltScreen()).Start()
 		},
 	}
 	cmd.Flags().StringVarP(&org, "org", "o", "", "organization to query (e.g. einride)")
