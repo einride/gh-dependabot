@@ -21,6 +21,7 @@ type pullRequest struct {
 	checkStatus    githubv4.StatusState
 	mergeable      githubv4.MergeableState
 	reviewDecision githubv4.PullRequestReviewDecision
+	bodyText       string
 }
 
 var _ list.DefaultItem = pullRequest{}
@@ -109,6 +110,7 @@ func loadPullRequestPage(client *githubv4.Client, prQuery pullRequestQuery) (*pu
 				ReviewDecision githubv4.PullRequestReviewDecision
 				URL            string
 				Title          string
+				BodyText       string
 				CreatedAt      githubv4.DateTime
 				UpdatedAt      githubv4.DateTime
 				Repository     struct {
@@ -160,6 +162,7 @@ func loadPullRequestPage(client *githubv4.Client, prQuery pullRequestQuery) (*pu
 	for _, node := range search.Nodes {
 		page.PullRequests = append(page.PullRequests, pullRequest{
 			title:          node.PullRequest.Title,
+			bodyText:       node.PullRequest.BodyText,
 			url:            node.PullRequest.URL,
 			createdAt:      node.PullRequest.CreatedAt.Time,
 			updatedAt:      node.PullRequest.UpdatedAt.Time,

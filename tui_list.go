@@ -16,6 +16,7 @@ var listViewStyle = lipgloss.NewStyle().Padding(1, 2)
 type keyMap struct {
 	merge  key.Binding
 	rebase key.Binding
+	view   key.Binding
 	browse key.Binding // open PR in default browser.
 }
 
@@ -33,6 +34,10 @@ func newKeyMap() *keyMap {
 			key.WithKeys("b"),
 			key.WithHelp("b", "open in browser"),
 		),
+		view: key.NewBinding(
+			key.WithKeys("v"),
+			key.WithHelp("v", "view details"),
+		),
 	}
 }
 
@@ -40,6 +45,7 @@ func (d keyMap) Bindings() []key.Binding {
 	return []key.Binding{
 		d.merge,
 		d.rebase,
+		d.view,
 		d.browse,
 	}
 }
@@ -106,6 +112,10 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 		case key.Matches(msg, m.keyMap.browse):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
 				cmds = append(cmds, openInBrowser(selectedItem))
+			}
+		case key.Matches(msg, m.keyMap.view):
+			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				cmds = append(cmds, viewPullRequestDetailsCmd(selectedItem))
 			}
 		}
 	}
