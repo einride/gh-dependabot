@@ -13,12 +13,12 @@ type pullRequestMerged struct {
 	pr pullRequest
 }
 
-func mergePullRequest(pr pullRequest) tea.Cmd {
+func mergePullRequest(pr pullRequest, mergeMethod string) tea.Cmd {
 	return func() tea.Msg {
 		if _, err := gh.Run("pr", "review", "--approve", pr.url); err != nil {
 			return errorMessage{err: err}
 		}
-		if _, err := gh.Run("pr", "merge", "--auto", "--rebase", pr.url); err != nil {
+		if _, err := gh.Run("pr", "merge", "--auto", mergeMethod, pr.url); err != nil {
 			return errorMessage{err: err}
 		}
 		return pullRequestMerged{pr: pr}

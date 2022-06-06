@@ -14,17 +14,27 @@ import (
 var listViewStyle = lipgloss.NewStyle().Padding(1, 2)
 
 type keyMap struct {
-	merge  key.Binding
-	rebase key.Binding
-	view   key.Binding
-	browse key.Binding // open PR in default browser.
+	mergeRebase  key.Binding
+	mergeDefault key.Binding
+	mergeSquash  key.Binding
+	rebase       key.Binding
+	view         key.Binding
+	browse       key.Binding // open PR in default browser.
 }
 
 func newKeyMap() *keyMap {
 	return &keyMap{
-		merge: key.NewBinding(
+		mergeRebase: key.NewBinding(
 			key.WithKeys("enter"),
-			key.WithHelp("enter", "merge"),
+			key.WithHelp("enter", "merge (rebase)"),
+		),
+		mergeDefault: key.NewBinding(
+			key.WithKeys("ctrl+enter"),
+			key.WithHelp("ctrl+enter", "merge (merge-commit)"),
+		),
+		mergeSquash: key.NewBinding(
+			key.WithKeys("shift+enter"),
+			key.WithHelp("shift+enter", "merge (squash)"),
 		),
 		rebase: key.NewBinding(
 			key.WithKeys("r"),
@@ -43,7 +53,9 @@ func newKeyMap() *keyMap {
 
 func (d keyMap) Bindings() []key.Binding {
 	return []key.Binding{
-		d.merge,
+		d.mergeRebase,
+		d.mergeDefault,
+		d.mergeSquash,
 		d.rebase,
 		d.view,
 		d.browse,
@@ -92,13 +104,31 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 		m.listModel.SetSize(msg.Width-leftGap-rightGap, msg.Height-topGap-bottomGap)
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.keyMap.merge):
+		case key.Matches(msg, m.keyMap.mergeRebase):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
 				m.listModel.RemoveItem(m.listModel.Index())
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					mergePullRequest(selectedItem),
+					mergePullRequest(selectedItem, "--rebase"),
+				)
+			}
+		case key.Matches(msg, m.keyMap.mergeDefault):
+			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				m.listModel.RemoveItem(m.listModel.Index())
+				cmds = append(
+					cmds,
+					m.listModel.StartSpinner(),
+					mergePullRequest(selectedItem, "--merge"),
+				)
+			}
+		case key.Matches(msg, m.keyMap.mergeSquash):
+			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				m.listModel.RemoveItem(m.listModel.Index())
+				cmds = append(
+					cmds,
+					m.listModel.StartSpinner(),
+					mergePullRequest(selectedItem, "--squash"),
 				)
 			}
 		case key.Matches(msg, m.keyMap.rebase):
