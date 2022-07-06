@@ -3,7 +3,7 @@ module github.com/einride/gh-dependabot
 go 1.17
 
 require (
-	github.com/charmbracelet/bubbles v0.12.0
+	github.com/charmbracelet/bubbles v0.13.0
 	github.com/charmbracelet/bubbletea v0.22.0
 	github.com/charmbracelet/lipgloss v0.5.0
 	github.com/shurcooL/githubv4 v0.0.0-20211117020012-5800b9de5b8b
