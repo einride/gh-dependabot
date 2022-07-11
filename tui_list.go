@@ -14,12 +14,13 @@ import (
 var listViewStyle = lipgloss.NewStyle().Padding(1, 2)
 
 type keyMap struct {
-	mergeRebase  key.Binding
-	mergeDefault key.Binding
-	mergeSquash  key.Binding
-	rebase       key.Binding
-	view         key.Binding
-	browse       key.Binding // open PR in default browser.
+	mergeRebase     key.Binding
+	mergeDefault    key.Binding
+	mergeSquash     key.Binding
+	mergeDependabot key.Binding
+	rebase          key.Binding
+	view            key.Binding
+	browse          key.Binding // open PR in default browser.
 }
 
 func newKeyMap() *keyMap {
@@ -29,12 +30,16 @@ func newKeyMap() *keyMap {
 			key.WithHelp("enter", "merge (rebase)"),
 		),
 		mergeDefault: key.NewBinding(
-			key.WithKeys("ctrl+enter"),
-			key.WithHelp("ctrl+enter", "merge (merge-commit)"),
+			key.WithKeys("ctrl+m"),
+			key.WithHelp("ctrl+m", "merge (merge-commit)"),
 		),
 		mergeSquash: key.NewBinding(
-			key.WithKeys("shift+enter"),
-			key.WithHelp("shift+enter", "merge (squash)"),
+			key.WithKeys("M"),
+			key.WithHelp("shift+m", "merge (squash)"),
+		),
+		mergeDependabot: key.NewBinding(
+			key.WithKeys("alt+m"),
+			key.WithHelp("alt+m", "merge (Dependabot)"),
 		),
 		rebase: key.NewBinding(
 			key.WithKeys("r"),
@@ -56,6 +61,7 @@ func (d keyMap) Bindings() []key.Binding {
 		d.mergeRebase,
 		d.mergeDefault,
 		d.mergeSquash,
+		d.mergeDependabot,
 		d.rebase,
 		d.view,
 		d.browse,
@@ -110,7 +116,7 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					mergePullRequest(selectedItem, "--rebase"),
+					mergePullRequest(selectedItem, MethodRebase),
 				)
 			}
 		case key.Matches(msg, m.keyMap.mergeDefault):
@@ -119,7 +125,7 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					mergePullRequest(selectedItem, "--merge"),
+					mergePullRequest(selectedItem, MethodMerge),
 				)
 			}
 		case key.Matches(msg, m.keyMap.mergeSquash):
@@ -128,7 +134,16 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					mergePullRequest(selectedItem, "--squash"),
+					mergePullRequest(selectedItem, MethodSquash),
+				)
+			}
+		case key.Matches(msg, m.keyMap.mergeDependabot):
+			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				m.listModel.RemoveItem(m.listModel.Index())
+				cmds = append(
+					cmds,
+					m.listModel.StartSpinner(),
+					mergePullRequest(selectedItem, MethodDependabot),
 				)
 			}
 		case key.Matches(msg, m.keyMap.rebase):

@@ -13,12 +13,27 @@ type pullRequestMerged struct {
 	pr pullRequest
 }
 
-func mergePullRequest(pr pullRequest, mergeMethod string) tea.Cmd {
+type mergeMethod string
+
+const (
+	MethodRebase     mergeMethod = "--rebase"
+	MethodMerge      mergeMethod = "--merge"
+	MethodSquash     mergeMethod = "--squash"
+	MethodDependabot mergeMethod = "@dependabot merge"
+)
+
+func mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd {
 	return func() tea.Msg {
 		if _, err := gh.Run("pr", "review", "--approve", pr.url); err != nil {
 			return errorMessage{err: err}
 		}
-		if _, err := gh.Run("pr", "merge", "--auto", mergeMethod, pr.url); err != nil {
+		var args []string
+		if method == MethodDependabot {
+			args = []string{"pr", "comment", "--body", string(method), pr.url}
+		} else {
+			args = []string{"pr", "merge", "--auto", string(method), pr.url}
+		}
+		if _, err := gh.Run(args...); err != nil {
 			return errorMessage{err: err}
 		}
 		return pullRequestMerged{pr: pr}
