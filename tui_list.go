@@ -21,6 +21,7 @@ type keyMap struct {
 	rebase          key.Binding
 	view            key.Binding
 	browse          key.Binding // open PR in default browser.
+	copyCheckout    key.Binding
 }
 
 func newKeyMap() *keyMap {
@@ -53,6 +54,10 @@ func newKeyMap() *keyMap {
 			key.WithKeys("v"),
 			key.WithHelp("v", "view details"),
 		),
+		copyCheckout: key.NewBinding(
+			key.WithKeys("c"),
+			key.WithHelp("c", "copy checkout command"),
+		),
 	}
 }
 
@@ -65,6 +70,7 @@ func (d keyMap) Bindings() []key.Binding {
 		d.rebase,
 		d.view,
 		d.browse,
+		d.copyCheckout,
 	}
 }
 
@@ -161,6 +167,10 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 		case key.Matches(msg, m.keyMap.view):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
 				cmds = append(cmds, viewPullRequestDetailsCmd(selectedItem))
+			}
+		case key.Matches(msg, m.keyMap.copyCheckout):
+			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				cmds = append(cmds, copyCheckoutCmd(selectedItem))
 			}
 		}
 	}
