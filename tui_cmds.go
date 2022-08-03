@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/einride/gh-dependabot/internal/gh"
 )
@@ -81,5 +82,18 @@ type viewPullRequestDetails struct {
 func viewPullRequestDetailsCmd(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
 		return viewPullRequestDetails{pr: pr}
+	}
+}
+
+type copyCheckout struct {
+	pr pullRequest
+}
+
+func copyCheckoutCmd(pr pullRequest) tea.Cmd {
+	return func() tea.Msg {
+		if err := clipboard.WriteAll("gh pr checkout " + pr.number); err != nil {
+			return errorMessage{err: err}
+		}
+		return copyCheckout{pr: pr}
 	}
 }
