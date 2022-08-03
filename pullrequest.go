@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"path"
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -22,13 +23,14 @@ type pullRequest struct {
 	mergeable      githubv4.MergeableState
 	reviewDecision githubv4.PullRequestReviewDecision
 	bodyText       string
+	number         string
 }
 
 var _ list.DefaultItem = pullRequest{}
 
 // Title implements list.DefaultItem.
 func (p pullRequest) Title() string {
-	return p.repository
+	return p.repository + " #" + p.number
 }
 
 // Description implements list.DefaultItem.
@@ -51,7 +53,7 @@ func (p pullRequest) Description() string {
 
 // FilterValue implements list.DefaultItem.
 func (p pullRequest) FilterValue() string {
-	return p.repository + " " + p.title
+	return p.repository + " " + p.title + " #" + p.number
 }
 
 func checkStatusEmoji(c githubv4.StatusState) string {
@@ -171,6 +173,7 @@ func loadPullRequestPage(client *githubv4.Client, prQuery pullRequestQuery) (*pu
 			state:          node.PullRequest.State,
 			mergeable:      node.PullRequest.Mergeable,
 			reviewDecision: node.PullRequest.ReviewDecision,
+			number:         path.Base(node.PullRequest.URL),
 		})
 		if len(node.PullRequest.Commits.Nodes) > 0 {
 			state := node.PullRequest.Commits.Nodes[0].Commit.StatusCheckRollup.State
