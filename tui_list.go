@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-//nolint: gochecknoglobals
+//nolint:gochecknoglobals
 var listViewStyle = lipgloss.NewStyle().Padding(1, 2)
 
 type keyMap struct {

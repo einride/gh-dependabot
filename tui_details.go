@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-//nolint: gochecknoglobals
+//nolint:gochecknoglobals
 var detailsViewStyle = lipgloss.NewStyle().Padding(1, 4)
 
 func newDetailsView() DetailsView {
