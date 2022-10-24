@@ -19,6 +19,7 @@ type keyMap struct {
 	mergeSquash     key.Binding
 	mergeDependabot key.Binding
 	rebase          key.Binding
+	recreate        key.Binding
 	view            key.Binding
 	browse          key.Binding // open PR in default browser.
 	copyCheckout    key.Binding
@@ -46,6 +47,10 @@ func newKeyMap() *keyMap {
 			key.WithKeys("r"),
 			key.WithHelp("r", "rebase"),
 		),
+		recreate: key.NewBinding(
+			key.WithKeys("R"),
+			key.WithHelp("shift+r", "recreate"),
+		),
 		browse: key.NewBinding(
 			key.WithKeys("b"),
 			key.WithHelp("b", "open in browser"),
@@ -68,6 +73,7 @@ func (d keyMap) Bindings() []key.Binding {
 		d.mergeSquash,
 		d.mergeDependabot,
 		d.rebase,
+		d.recreate,
 		d.view,
 		d.browse,
 		d.copyCheckout,
@@ -108,6 +114,9 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 	case pullRequestRebased:
 		m.listModel.StopSpinner()
 		cmds = append(cmds, m.listModel.NewStatusMessage("Rebased "+msg.pr.url))
+	case pullRequestRecreated:
+		m.listModel.StopSpinner()
+		cmds = append(cmds, m.listModel.NewStatusMessage("Recreated "+msg.pr.url))
 	case pullRequestOpenedInBrowser:
 		m.listModel.StopSpinner()
 		cmds = append(cmds, m.listModel.NewStatusMessage("Opened "+msg.pr.url))
@@ -158,6 +167,14 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 					cmds,
 					m.listModel.StartSpinner(),
 					rebasePullRequest(selectedItem),
+				)
+			}
+		case key.Matches(msg, m.keyMap.recreate):
+			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				cmds = append(
+					cmds,
+					m.listModel.StartSpinner(),
+					recreatePullRequest(selectedItem),
 				)
 			}
 		case key.Matches(msg, m.keyMap.browse):

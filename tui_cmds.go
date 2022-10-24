@@ -54,6 +54,19 @@ func rebasePullRequest(pr pullRequest) tea.Cmd {
 	}
 }
 
+type pullRequestRecreated struct {
+	pr pullRequest
+}
+
+func recreatePullRequest(pr pullRequest) tea.Cmd {
+	return func() tea.Msg {
+		if _, err := gh.Run("pr", "comment", "--body", "@dependabot recreate", pr.url); err != nil {
+			return errorMessage{err: err}
+		}
+		return pullRequestRecreated{pr: pr}
+	}
+}
+
 type pullRequestOpenedInBrowser struct {
 	pr pullRequest
 }
