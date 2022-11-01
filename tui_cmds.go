@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/einride/gh-dependabot/internal/gh"
@@ -25,17 +27,24 @@ const (
 
 func mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd {
 	return func() tea.Msg {
-		if _, err := gh.Run("pr", "review", "--approve", pr.url); err != nil {
-			return errorMessage{err: err}
-		}
-		var args []string
-		if method == MethodDependabot {
-			args = []string{"pr", "comment", "--body", string(method), pr.url}
-		} else {
-			args = []string{"pr", "merge", "--auto", string(method), pr.url}
-		}
-		if _, err := gh.Run(args...); err != nil {
-			return errorMessage{err: err}
+		switch method {
+		case MethodRebase:
+			fallthrough
+		case MethodMerge:
+			fallthrough
+		case MethodSquash:
+			if _, err := gh.Run("pr", "review", "--approve", pr.url); err != nil {
+				return errorMessage{err: err}
+			}
+			if _, err := gh.Run("pr", "merge", "--auto", string(method), pr.url); err != nil {
+				return errorMessage{err: err}
+			}
+		case MethodDependabot:
+			if _, err := gh.Run("pr", "review", "--approve", "--body", string(method), pr.url); err != nil {
+				return errorMessage{err: err}
+			}
+		default:
+			return errorMessage{err: fmt.Errorf("unknown merge method: %q", method)}
 		}
 		return pullRequestMerged{pr: pr}
 	}
