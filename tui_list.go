@@ -52,8 +52,8 @@ func newKeyMap() *keyMap {
 			key.WithHelp("shift+r", "recreate"),
 		),
 		browse: key.NewBinding(
-			key.WithKeys("b"),
-			key.WithHelp("b", "open in browser"),
+			key.WithKeys("o"),
+			key.WithHelp("o", "open in browser"),
 		),
 		view: key.NewBinding(
 			key.WithKeys("v"),
