@@ -85,14 +85,15 @@ type pullRequestQuery struct {
 
 func (q pullRequestQuery) Filter() string {
 	filterStr := ""
-	switch {
-	case q.org != "":
-		filterStr += " org:" + q.org
-		fallthrough
-	case q.team != "":
-		filterStr += " team-review-requested:" + q.team
-	default:
+	if q.org == "" && q.team == "" {
 		filterStr += " review-requested:" + q.username
+	} else {
+		if q.org != "" {
+			filterStr += " org:" + q.org
+		}
+		if q.team != "" {
+			filterStr += " team-review-requested:" + q.team
+		}
 	}
 
 	return filterStr
