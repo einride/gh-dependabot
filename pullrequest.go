@@ -84,18 +84,22 @@ type pullRequestQuery struct {
 }
 
 func (q pullRequestQuery) Filter() string {
+	filterStr := ""
 	switch {
 	case q.org != "":
-		return "org:" + q.org
+		filterStr += " org:" + q.org
+		fallthrough
 	case q.team != "":
-		return "team-review-requested:" + q.team
+		filterStr += " team-review-requested:" + q.team
 	default:
-		return "review-requested:" + q.username
+		filterStr += " review-requested:" + q.username
 	}
+
+	return filterStr
 }
 
 func (q pullRequestQuery) SearchQuery() string {
-	return "type:pr state:open archived:false author:app/dependabot " + q.Filter()
+	return "type:pr state:open archived:false author:app/dependabot" + q.Filter()
 }
 
 func loadPullRequestPage(client *githubv4.Client, prQuery pullRequestQuery) (*pullRequestPage, error) {
