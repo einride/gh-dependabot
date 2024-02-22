@@ -22,7 +22,7 @@ func main() {
 		Use:     "gh dependabot",
 		Short:   "Manage Dependabot PRs.",
 		Example: "gh dependabot --org einride",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			log.Println("Resolving current user...")
 			username, err := gh.Run("api", "graphql", "-f", "query={viewer{login}}", "--jq", ".data.viewer.login")
 			if err != nil {
