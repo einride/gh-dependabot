@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/einride/gh-dependabot/internal/gh"
+	"golang.org/x/time/rate"
 )
 
 type errorMessage struct {
@@ -25,7 +28,18 @@ const (
 	MethodDependabot mergeMethod = "@dependabot merge"
 )
 
-func mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd {
+type commander struct {
+	limiter *rate.Limiter
+}
+
+func newCommander() commander {
+	limiter := rate.NewLimiter(rate.Every(time.Second*2), 1)
+	return commander{
+		limiter: limiter,
+	}
+}
+
+func (c commander) mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd {
 	return func() tea.Msg {
 		switch method {
 		case MethodRebase:
@@ -33,6 +47,8 @@ func mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd {
 		case MethodMerge:
 			fallthrough
 		case MethodSquash:
+			//nolint:errcheck // hard coded limiter burst, can't fail
+			c.limiter.Wait(context.Background())
 			if _, err := gh.Run("pr", "review", "--approve", pr.url); err != nil {
 				return errorMessage{err: err}
 			}
@@ -40,6 +56,8 @@ func mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd {
 				return errorMessage{err: err}
 			}
 		case MethodDependabot:
+			//nolint:errcheck // hard coded limiter burst, can't fail
+			c.limiter.Wait(context.Background())
 			if _, err := gh.Run("pr", "review", "--approve", "--body", string(method), pr.url); err != nil {
 				return errorMessage{err: err}
 			}
@@ -54,8 +72,10 @@ type pullRequestRebased struct {
 	pr pullRequest
 }
 
-func rebasePullRequest(pr pullRequest) tea.Cmd {
+func (c commander) rebasePullRequest(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
+		//nolint:errcheck // hard coded limiter burst, can't fail
+		c.limiter.Wait(context.Background())
 		if _, err := gh.Run("pr", "comment", "--body", "@dependabot rebase", pr.url); err != nil {
 			return errorMessage{err: err}
 		}
@@ -67,8 +87,10 @@ type pullRequestRecreated struct {
 	pr pullRequest
 }
 
-func recreatePullRequest(pr pullRequest) tea.Cmd {
+func (c commander) recreatePullRequest(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
+		//nolint:errcheck // hard coded limiter burst, can't fail
+		c.limiter.Wait(context.Background())
 		if _, err := gh.Run("pr", "comment", "--body", "@dependabot recreate", pr.url); err != nil {
 			return errorMessage{err: err}
 		}
@@ -80,7 +102,7 @@ type pullRequestOpenedInBrowser struct {
 	pr pullRequest
 }
 
-func openInBrowser(pr pullRequest) tea.Cmd {
+func (c commander) openInBrowser(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
 		if _, err := gh.Run("pr", "view", "--web", pr.url); err != nil {
 			return errorMessage{err: err}

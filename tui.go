@@ -5,6 +5,8 @@ import (
 	"github.com/shurcooL/githubv4"
 )
 
+const operationInProgressText = "Preventing quit due to in progress operations. To quit, repeat quit command."
+
 var _ tea.Model = App{}
 
 func newApp(_ *githubv4.Client, query pullRequestQuery, pullRequests []pullRequest) App {
@@ -21,7 +23,8 @@ type App struct {
 	listView    ListView
 	detailsView DetailsView
 
-	isShowingDetails bool
+	isShowingDetails  bool
+	preventedQuitOnce bool
 }
 
 func (a App) Init() tea.Cmd {
@@ -41,6 +44,10 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" || msg.String() == "q" {
+			if a.listView.hasWorkInProgress() && !a.preventedQuitOnce {
+				a.preventedQuitOnce = true
+				return a, a.listView.listModel.NewStatusMessage(operationInProgressText)
+			}
 			return a, tea.Quit
 		}
 

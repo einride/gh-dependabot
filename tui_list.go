@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -81,8 +82,11 @@ func (d keyMap) Bindings() []key.Binding {
 }
 
 type ListView struct {
-	listModel list.Model
-	keyMap    *keyMap
+	listModel            list.Model
+	keyMap               *keyMap
+	commander            commander
+	inProgressOperations map[string]int
+	mapMutex             *sync.Mutex
 }
 
 func newListView(query pullRequestQuery, pullRequests []pullRequest) ListView {
@@ -93,13 +97,45 @@ func newListView(query pullRequestQuery, pullRequests []pullRequest) ListView {
 	listModel.AdditionalFullHelpKeys = keyMap.Bindings
 	listModel.AdditionalShortHelpKeys = listModel.AdditionalFullHelpKeys
 	return ListView{
-		listModel: listModel,
-		keyMap:    keyMap,
+		listModel:            listModel,
+		keyMap:               keyMap,
+		commander:            newCommander(),
+		inProgressOperations: make(map[string]int),
+		mapMutex:             &sync.Mutex{},
 	}
 }
 
 func (m ListView) Init() tea.Cmd {
 	return nil
+}
+
+func (m ListView) hasWorkInProgress() bool {
+	m.mapMutex.Lock()
+	defer m.mapMutex.Unlock()
+	return len(m.inProgressOperations) > 0
+}
+
+func (m ListView) markInProgress(repository, number string) {
+	m.mapMutex.Lock()
+	defer m.mapMutex.Unlock()
+	repoString := fmt.Sprintf("%s/%s", repository, number)
+	if _, ok := m.inProgressOperations[repoString]; !ok {
+		m.inProgressOperations[repoString] = 0
+	}
+	m.inProgressOperations[repoString]++
+}
+
+func (m ListView) markDone(repository, number string) {
+	repoString := fmt.Sprintf("%s/%s", repository, number)
+	m.mapMutex.Lock()
+	defer m.mapMutex.Unlock()
+	if _, ok := m.inProgressOperations[repoString]; !ok {
+		return
+	}
+	m.inProgressOperations[repoString]--
+	if m.inProgressOperations[repoString] <= 0 {
+		delete(m.inProgressOperations, repoString)
+	}
 }
 
 func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
@@ -110,12 +146,15 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 		cmds = append(cmds, m.listModel.NewStatusMessage(msg.err.Error()))
 	case pullRequestMerged:
 		m.listModel.StopSpinner()
+		m.markDone(msg.pr.repository, msg.pr.number)
 		cmds = append(cmds, m.listModel.NewStatusMessage("Approved "+msg.pr.url))
 	case pullRequestRebased:
 		m.listModel.StopSpinner()
+		m.markDone(msg.pr.repository, msg.pr.number)
 		cmds = append(cmds, m.listModel.NewStatusMessage("Rebased "+msg.pr.url))
 	case pullRequestRecreated:
 		m.listModel.StopSpinner()
+		m.markDone(msg.pr.repository, msg.pr.number)
 		cmds = append(cmds, m.listModel.NewStatusMessage("Recreated "+msg.pr.url))
 	case pullRequestOpenedInBrowser:
 		m.listModel.StopSpinner()
@@ -127,59 +166,65 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.keyMap.mergeRebase):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				m.markInProgress(selectedItem.repository, selectedItem.number)
 				m.listModel.RemoveItem(m.listModel.Index())
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					mergePullRequest(selectedItem, MethodRebase),
+					m.commander.mergePullRequest(selectedItem, MethodRebase),
 				)
 			}
 		case key.Matches(msg, m.keyMap.mergeDefault):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				m.markInProgress(selectedItem.repository, selectedItem.number)
 				m.listModel.RemoveItem(m.listModel.Index())
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					mergePullRequest(selectedItem, MethodMerge),
+					m.commander.mergePullRequest(selectedItem, MethodMerge),
 				)
 			}
 		case key.Matches(msg, m.keyMap.mergeSquash):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				m.markInProgress(selectedItem.repository, selectedItem.number)
 				m.listModel.RemoveItem(m.listModel.Index())
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					mergePullRequest(selectedItem, MethodSquash),
+					m.commander.mergePullRequest(selectedItem, MethodSquash),
 				)
 			}
 		case key.Matches(msg, m.keyMap.mergeDependabot):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				m.markInProgress(selectedItem.repository, selectedItem.number)
 				m.listModel.RemoveItem(m.listModel.Index())
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					mergePullRequest(selectedItem, MethodDependabot),
+					m.commander.mergePullRequest(selectedItem, MethodDependabot),
 				)
 			}
 		case key.Matches(msg, m.keyMap.rebase):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				m.markInProgress(selectedItem.repository, selectedItem.number)
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					rebasePullRequest(selectedItem),
+					m.commander.rebasePullRequest(selectedItem),
 				)
 			}
 		case key.Matches(msg, m.keyMap.recreate):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
+				m.markInProgress(selectedItem.repository, selectedItem.number)
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					recreatePullRequest(selectedItem),
+					m.commander.recreatePullRequest(selectedItem),
 				)
 			}
 		case key.Matches(msg, m.keyMap.browse):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
-				cmds = append(cmds, openInBrowser(selectedItem))
+				cmds = append(cmds, m.commander.openInBrowser(selectedItem))
 			}
 		case key.Matches(msg, m.keyMap.view):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
