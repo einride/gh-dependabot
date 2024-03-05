@@ -83,6 +83,7 @@ func (d keyMap) Bindings() []key.Binding {
 type ListView struct {
 	listModel list.Model
 	keyMap    *keyMap
+	commander commander
 }
 
 func newListView(query pullRequestQuery, pullRequests []pullRequest) ListView {
@@ -95,6 +96,7 @@ func newListView(query pullRequestQuery, pullRequests []pullRequest) ListView {
 	return ListView{
 		listModel: listModel,
 		keyMap:    keyMap,
+		commander: newCommander(pullRequests),
 	}
 }
 
@@ -131,7 +133,7 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					mergePullRequest(selectedItem, MethodRebase),
+					m.commander.mergePullRequest(selectedItem, MethodRebase),
 				)
 			}
 		case key.Matches(msg, m.keyMap.mergeDefault):
@@ -140,7 +142,7 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					mergePullRequest(selectedItem, MethodMerge),
+					m.commander.mergePullRequest(selectedItem, MethodMerge),
 				)
 			}
 		case key.Matches(msg, m.keyMap.mergeSquash):
@@ -149,7 +151,7 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					mergePullRequest(selectedItem, MethodSquash),
+					m.commander.mergePullRequest(selectedItem, MethodSquash),
 				)
 			}
 		case key.Matches(msg, m.keyMap.mergeDependabot):
@@ -158,7 +160,7 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					mergePullRequest(selectedItem, MethodDependabot),
+					m.commander.mergePullRequest(selectedItem, MethodDependabot),
 				)
 			}
 		case key.Matches(msg, m.keyMap.rebase):
@@ -166,7 +168,7 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					rebasePullRequest(selectedItem),
+					m.commander.rebasePullRequest(selectedItem),
 				)
 			}
 		case key.Matches(msg, m.keyMap.recreate):
@@ -174,12 +176,12 @@ func (m ListView) Update(msg tea.Msg) (ListView, tea.Cmd) {
 				cmds = append(
 					cmds,
 					m.listModel.StartSpinner(),
-					recreatePullRequest(selectedItem),
+					m.commander.recreatePullRequest(selectedItem),
 				)
 			}
 		case key.Matches(msg, m.keyMap.browse):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {
-				cmds = append(cmds, openInBrowser(selectedItem))
+				cmds = append(cmds, m.commander.openInBrowser(selectedItem))
 			}
 		case key.Matches(msg, m.keyMap.view):
 			if selectedItem, ok := m.listModel.SelectedItem().(pullRequest); ok {

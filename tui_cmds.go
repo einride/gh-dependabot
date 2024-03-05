@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/einride/gh-dependabot/internal/gh"
+	"golang.org/x/time/rate"
 )
 
 type errorMessage struct {
@@ -25,14 +27,36 @@ const (
 	MethodDependabot mergeMethod = "@dependabot merge"
 )
 
-func mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd {
+type commander struct {
+	limiters map[string]*rate.Limiter
+}
+
+func newCommander(pullRequests []pullRequest) commander {
+	limiters := make(map[string]*rate.Limiter)
+	for _, pr := range pullRequests {
+		if _, ok := limiters[pr.repository]; !ok {
+			limiters[pr.repository] = rate.NewLimiter(rate.Every(time.Second*5), 1)
+		}
+	}
+	return commander{
+		limiters: limiters,
+	}
+}
+
+func (c commander) mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd {
 	return func() tea.Msg {
+		limiter, ok := c.limiters[pr.repository]
+		if !ok {
+			return errorMessage{err: fmt.Errorf("mismanaged state, no limiter")}
+		}
 		switch method {
 		case MethodRebase:
 			fallthrough
 		case MethodMerge:
 			fallthrough
 		case MethodSquash:
+			r := limiter.Reserve()
+			time.Sleep(r.Delay())
 			if _, err := gh.Run("pr", "review", "--approve", pr.url); err != nil {
 				return errorMessage{err: err}
 			}
@@ -40,6 +64,8 @@ func mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd {
 				return errorMessage{err: err}
 			}
 		case MethodDependabot:
+			r := limiter.Reserve()
+			time.Sleep(r.Delay())
 			if _, err := gh.Run("pr", "review", "--approve", "--body", string(method), pr.url); err != nil {
 				return errorMessage{err: err}
 			}
@@ -54,8 +80,15 @@ type pullRequestRebased struct {
 	pr pullRequest
 }
 
-func rebasePullRequest(pr pullRequest) tea.Cmd {
+func (c commander) rebasePullRequest(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
+		limiter, ok := c.limiters[pr.repository]
+		if !ok {
+			return errorMessage{err: fmt.Errorf("mismanaged state, no limiter")}
+		}
+		r := limiter.Reserve()
+		time.Sleep(r.Delay())
+
 		if _, err := gh.Run("pr", "comment", "--body", "@dependabot rebase", pr.url); err != nil {
 			return errorMessage{err: err}
 		}
@@ -67,8 +100,14 @@ type pullRequestRecreated struct {
 	pr pullRequest
 }
 
-func recreatePullRequest(pr pullRequest) tea.Cmd {
+func (c commander) recreatePullRequest(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
+		limiter, ok := c.limiters[pr.repository]
+		if !ok {
+			return errorMessage{err: fmt.Errorf("mismanaged state, no limiter")}
+		}
+		r := limiter.Reserve()
+		time.Sleep(r.Delay())
 		if _, err := gh.Run("pr", "comment", "--body", "@dependabot recreate", pr.url); err != nil {
 			return errorMessage{err: err}
 		}
@@ -80,8 +119,14 @@ type pullRequestOpenedInBrowser struct {
 	pr pullRequest
 }
 
-func openInBrowser(pr pullRequest) tea.Cmd {
+func (c commander) openInBrowser(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
+		limiter, ok := c.limiters[pr.repository]
+		if !ok {
+			return errorMessage{err: fmt.Errorf("mismanaged state, no limiter")}
+		}
+		r := limiter.Reserve()
+		time.Sleep(r.Delay())
 		if _, err := gh.Run("pr", "view", "--web", pr.url); err != nil {
 			return errorMessage{err: err}
 		}
