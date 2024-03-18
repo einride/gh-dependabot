@@ -67,10 +67,6 @@ git-verify-no-diff: $(sagefile)
 go-mod-tidy: $(sagefile)
 	@$(sagefile) GoModTidy
 
-.PHONY: go-review
-go-review: $(sagefile)
-	@$(sagefile) GoReview
-
 .PHONY: go-test
 go-test: $(sagefile)
 	@$(sagefile) GoTest
