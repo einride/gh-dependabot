@@ -18,6 +18,7 @@ func main() {
 	})
 	var org string
 	var team string
+	var securityFilter bool
 	cmd := cobra.Command{
 		Use:     "gh dependabot",
 		Short:   "Manage Dependabot PRs.",
@@ -53,6 +54,15 @@ func main() {
 				pullRequests = append(pullRequests, nextPage.PullRequests...)
 				page = nextPage
 			}
+
+			if securityFilter {
+				log.Printf("Matching pull requests to security alerts...")
+				pullRequests, err = filterSecurityPullRequests(client, &pullRequests)
+				if err != nil {
+					return err
+				}
+			}
+
 			sort.Slice(pullRequests, func(i, j int) bool {
 				return pullRequests[i].updatedAt.Before(pullRequests[j].updatedAt)
 			})
@@ -62,6 +72,8 @@ func main() {
 	}
 	cmd.Flags().StringVarP(&org, "org", "o", "", "organization to query (e.g. einride)")
 	cmd.Flags().StringVarP(&team, "team", "t", "", "team to query (e.g. einride/team-transport-execution)")
+	cmd.Flags().
+		BoolVarP(&securityFilter, "only-security", "s", false, "show only pull requests that relate to security alerts")
 	if err := cmd.Execute(); err != nil {
 		log.Fatalln(err)
 	}
