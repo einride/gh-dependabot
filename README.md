@@ -32,7 +32,8 @@ Examples:
 gh dependabot --org einride
 
 Flags:
-  -h, --help          help for gh
-  -o, --org string    organization to query (e.g. einride)
-  -t, --team string   team to query (e.g. einride/team-transport-execution)
+  -h, --help            help for gh
+  -s, --only-security   show only pull requests that relate to security alerts
+  -o, --org string      organization to query (e.g. einride)
+  -t, --team string     team to query (e.g. einride/team-transport-execution)
 ```
