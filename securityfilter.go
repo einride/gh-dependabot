@@ -9,6 +9,7 @@ import (
 )
 
 func filterSecurityPullRequests(
+	ctx context.Context,
 	client *githubv4.Client,
 	pullRequests *[]pullRequest,
 ) ([]pullRequest, error) {
@@ -35,7 +36,7 @@ func filterSecurityPullRequests(
 		}
 		var vulnQ vulnQuery
 
-		if err := client.Query(context.Background(), &vulnQ, vulnVars); err != nil {
+		if err := client.Query(ctx, &vulnQ, vulnVars); err != nil {
 			return nil, fmt.Errorf("load vulnerability reports: %w", err)
 		}
 		for _, vulnAlert := range vulnQ.Repository.VulnerabilityAlerts.Nodes {

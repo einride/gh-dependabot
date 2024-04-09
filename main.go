@@ -23,7 +23,7 @@ func main() {
 		Use:     "gh dependabot",
 		Short:   "Manage Dependabot PRs.",
 		Example: "gh dependabot --org einride",
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			log.Println("Resolving current user...")
 			username, err := gh.Run("api", "graphql", "-f", "query={viewer{login}}", "--jq", ".data.viewer.login")
 			if err != nil {
@@ -57,7 +57,7 @@ func main() {
 
 			if securityFilter {
 				log.Printf("Matching pull requests to security alerts...")
-				pullRequests, err = filterSecurityPullRequests(client, &pullRequests)
+				pullRequests, err = filterSecurityPullRequests(cmd.Context(), client, &pullRequests)
 				if err != nil {
 					return err
 				}
