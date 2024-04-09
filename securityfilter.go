@@ -35,7 +35,6 @@ func filterSecurityPullRequests(
 			"name":  githubv4.String(pr.repository),
 		}
 		var vulnQ vulnQuery
-
 		if err := client.Query(ctx, &vulnQ, vulnVars); err != nil {
 			return nil, fmt.Errorf("load vulnerability reports: %w", err)
 		}
@@ -58,6 +57,5 @@ func filterSecurityPullRequests(
 			}
 		}
 	}
-
 	return filteredPullRequests, nil
 }

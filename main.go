@@ -54,7 +54,6 @@ func main() {
 				pullRequests = append(pullRequests, nextPage.PullRequests...)
 				page = nextPage
 			}
-
 			if securityFilter {
 				log.Printf("Matching pull requests to security alerts...")
 				pullRequests, err = filterSecurityPullRequests(cmd.Context(), client, &pullRequests)
@@ -62,7 +61,6 @@ func main() {
 					return err
 				}
 			}
-
 			sort.Slice(pullRequests, func(i, j int) bool {
 				return pullRequests[i].updatedAt.Before(pullRequests[j].updatedAt)
 			})
