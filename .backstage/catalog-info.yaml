@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: gh-dependabot
+  title: Github Dependabot CLI
+spec:
+  type: go-library
+  system: github
+  lifecycle: experimental
+  owner: platform-engineering
