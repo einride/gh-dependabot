@@ -8,7 +8,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.26.4
 	github.com/charmbracelet/lipgloss v0.11.0
 	github.com/shurcooL/githubv4 v0.0.0-20240120211514-18a1ae0e79dc
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	golang.org/x/time v0.5.0
 )
 
