@@ -1,13 +1,13 @@
 module github.com/einride/gh-dependabot
 
-go 1.18
+go 1.22
 
 require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/bubbles v0.18.0
 	github.com/charmbracelet/bubbletea v0.26.6
 	github.com/charmbracelet/lipgloss v0.12.1
-	github.com/shurcooL/githubv4 v0.0.0-20240120211514-18a1ae0e79dc
+	github.com/shurcooL/githubv4 v0.0.0-20240429030203-be2daab69064
 	github.com/spf13/cobra v1.8.1
 	golang.org/x/time v0.5.0
 )
