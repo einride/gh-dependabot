@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/bubbles v0.19.0
-	github.com/charmbracelet/bubbletea v0.27.1
+	github.com/charmbracelet/bubbletea v1.0.1
 	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/shurcooL/githubv4 v0.0.0-20240429030203-be2daab69064
 	github.com/spf13/cobra v1.8.1
