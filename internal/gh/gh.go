@@ -2,6 +2,7 @@ package gh
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,7 +17,7 @@ func Run(args ...string) (string, error) {
 	var stdout, stderr strings.Builder
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf(stderr.String())
+		return "", errors.New(stderr.String())
 	}
 	return strings.TrimSpace(stdout.String()), nil
 }
