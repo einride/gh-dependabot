@@ -1,6 +1,6 @@
 module github.com/einride/gh-dependabot
 
-go 1.22
+go 1.23
 
 require (
 	github.com/atotto/clipboard v0.1.4
