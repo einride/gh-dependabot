@@ -1,7 +1,6 @@
 module github.com/einride/gh-dependabot
 
 go 1.23
-
 require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/bubbles v0.20.0
@@ -9,7 +8,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/shurcooL/githubv4 v0.0.0-20240429030203-be2daab69064
 	github.com/spf13/cobra v1.8.1
-	golang.org/x/time v0.9.0
+	golang.org/x/time v0.11.0
 )
 
 require (
