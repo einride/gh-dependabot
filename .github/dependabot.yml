@@ -4,14 +4,41 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily
+      interval: monthly
+    commit-message:
+      prefix: "chore(deps):"
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: gomod
     directory: /
     schedule:
-      interval: daily
+      interval: monthly
+    commit-message:
+      prefix: "chore(deps):"
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: gomod
     directory: .sage
     schedule:
-      interval: weekly
+      interval: monthly
+    commit-message:
+      prefix: "chore(deps):"
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
