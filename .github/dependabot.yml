@@ -16,7 +16,7 @@ updates:
           - "patch"
 
   - package-ecosystem: gomod
-    directory: /
+    directories: [".", ".sage"]
     schedule:
       interval: monthly
     commit-message:
@@ -29,16 +29,3 @@ updates:
           - "minor"
           - "patch"
 
-  - package-ecosystem: gomod
-    directory: .sage
-    schedule:
-      interval: monthly
-    commit-message:
-      prefix: "chore(deps):"
-    groups:
-      all-dependencies:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
