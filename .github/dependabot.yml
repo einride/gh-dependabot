@@ -5,10 +5,8 @@ updates:
     directory: /
     schedule:
       interval: monthly
-    commit-message:
-      prefix: "chore(deps):"
     groups:
-      all-dependencies:
+      gha-dependencies:
         patterns:
           - "*"
         update-types:
@@ -19,10 +17,8 @@ updates:
     directories: [".", ".sage"]
     schedule:
       interval: monthly
-    commit-message:
-      prefix: "chore(deps):"
     groups:
-      all-dependencies:
+      go-dependencies:
         patterns:
           - "*"
         update-types:
