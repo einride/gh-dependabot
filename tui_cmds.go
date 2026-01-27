@@ -28,6 +28,47 @@ const (
 	MethodDependabot mergeMethod = "dependabot auto-merge"
 )
 
+// mergeState represents the merge state status of a PR.
+// See https://docs.github.com/en/graphql/reference/enums#mergestatestatus
+type mergeState int
+
+const (
+	mergeStateUnknown  mergeState = iota // The state has not been identified
+	mergeStateBehind                     // The head ref is out of date
+	mergeStateBlocked                    // The merge is blocked
+	mergeStateClean                      // Mergeable and passing commit status
+	mergeStateDirty                      // The merge commit cannot be cleanly created (conflicts)
+	mergeStateDraft                      // The merge is blocked due to the pull request being a draft
+	mergeStateHasHooks                   // Mergeable with passing commit status and pre-receive hooks
+	mergeStateUnstable                   // Mergeable with non-passing commit status
+)
+
+// getMergeState returns the merge state status of a PR.
+func getMergeState(url string) mergeState {
+	status, err := gh.Run("pr", "view", url, "--json", "mergeStateStatus", "--jq", ".mergeStateStatus")
+	if err != nil {
+		return mergeStateUnknown
+	}
+	switch status {
+	case "BEHIND":
+		return mergeStateBehind
+	case "BLOCKED":
+		return mergeStateBlocked
+	case "CLEAN":
+		return mergeStateClean
+	case "DIRTY":
+		return mergeStateDirty
+	case "DRAFT":
+		return mergeStateDraft
+	case "HAS_HOOKS":
+		return mergeStateHasHooks
+	case "UNSTABLE":
+		return mergeStateUnstable
+	default:
+		return mergeStateUnknown
+	}
+}
+
 type commander struct {
 	limiter *rate.Limiter
 }
@@ -58,21 +99,38 @@ func (c commander) mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd 
 		case MethodDependabot:
 			//nolint:errcheck // hard coded limiter burst, can't fail
 			c.limiter.Wait(context.Background())
-			// Check if rebase is needed before requesting it
-			if needsRebase(pr.url) {
-				if _, err := gh.Run("pr", "comment", "--body", "@dependabot rebase", pr.url); err != nil {
-					return errorMessage{err: err}
-				}
-			}
-			// Approve the PR
+			// Approve the PR first
 			if _, err := gh.Run("pr", "review", "--approve", pr.url); err != nil {
 				return errorMessage{err: err}
 			}
-			// Try auto-merge first, then direct merge
-			// Try methods in order: rebase → squash → merge
-			if err := mergeWithFallback(pr.url); err != nil {
-				return errorMessage{err: err}
+			// Check merge state
+			state := getMergeState(pr.url)
+			// Request rebase if branch is behind
+			var requestedRebase bool
+			if state == mergeStateBehind {
+				_, _ = gh.Run("pr", "comment", "--body", "@dependabot rebase", pr.url)
+				requestedRebase = true
 			}
+			// Scenario 1: Try auto-merge (preferred - waits for checks)
+			if tryAutoMerge(pr.url) {
+				return pullRequestMerged{pr: pr}
+			}
+			// Scenario 2: Auto-merge not available, try direct merge (only if mergeable)
+			if state == mergeStateClean || state == mergeStateHasHooks {
+				if err := directMerge(pr.url); err == nil {
+					return pullRequestMerged{pr: pr}
+				}
+			}
+			// Scenario 3: Behind and no auto-merge - rebase and post helpful comment
+			if !requestedRebase {
+				_, _ = gh.Run("pr", "comment", "--body", "@dependabot rebase", pr.url)
+			}
+			_, _ = gh.Run("pr", "comment", "--body",
+				"⚠️ This PR needs to be rebased before it can be merged. "+
+					"Auto-merge is not enabled for this repository.\n\n"+
+					"Consider enabling auto-merge in repository settings to simplify the merge process.",
+				pr.url)
+			return errorMessage{err: fmt.Errorf("PR rebasing - auto-merge unavailable, merge manually after rebase")}
 		default:
 			return errorMessage{err: fmt.Errorf("unknown merge method: %q", method)}
 		}
@@ -80,27 +138,24 @@ func (c commander) mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd 
 	}
 }
 
-// needsRebase checks if a PR branch is behind the base branch.
-// See https://docs.github.com/en/graphql/reference/enums#mergestatestatus
-func needsRebase(url string) bool {
-	status, err := gh.Run("pr", "view", url, "--json", "mergeStateStatus", "--jq", ".mergeStateStatus")
-	if err != nil {
-		return false // If we can't check, skip the rebase request
-	}
-	return status == "BEHIND"
-}
-
-// mergeWithFallback tries to merge a PR using different methods in order of preference.
-// First tries auto-merge (rebase → squash → merge), then direct merge with the same order.
-func mergeWithFallback(url string) error {
+// tryAutoMerge attempts to enable auto-merge on a PR.
+// If the branch is behind, it requests a rebase first.
+// Returns true if auto-merge was successfully enabled.
+// Tries methods in order: rebase → squash → merge.
+func tryAutoMerge(url string) bool {
 	methods := []string{"--rebase", "--squash", "--merge"}
-	// Try auto-merge first with each method
 	for _, method := range methods {
 		if _, err := gh.Run("pr", "merge", "--auto", method, url); err == nil {
-			return nil
+			return true
 		}
 	}
-	// Fall back to direct merge with each method
+	return false
+}
+
+// directMerge attempts to merge a PR directly without auto-merge.
+// Tries methods in order: rebase → squash → merge.
+func directMerge(url string) error {
+	methods := []string{"--rebase", "--squash", "--merge"}
 	for _, method := range methods {
 		if _, err := gh.Run("pr", "merge", method, url); err == nil {
 			return nil
