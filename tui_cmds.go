@@ -25,7 +25,7 @@ const (
 	MethodRebase     mergeMethod = "--rebase"
 	MethodMerge      mergeMethod = "--merge"
 	MethodSquash     mergeMethod = "--squash"
-	MethodDependabot mergeMethod = "@dependabot merge"
+	MethodDependabot mergeMethod = "dependabot auto-merge"
 )
 
 type commander struct {
@@ -58,7 +58,19 @@ func (c commander) mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd 
 		case MethodDependabot:
 			//nolint:errcheck // hard coded limiter burst, can't fail
 			c.limiter.Wait(context.Background())
-			if _, err := gh.Run("pr", "review", "--approve", "--body", string(method), pr.url); err != nil {
+			// Check if rebase is needed before requesting it
+			if needsRebase(pr.url) {
+				if _, err := gh.Run("pr", "comment", "--body", "@dependabot rebase", pr.url); err != nil {
+					return errorMessage{err: err}
+				}
+			}
+			// Approve the PR
+			if _, err := gh.Run("pr", "review", "--approve", pr.url); err != nil {
+				return errorMessage{err: err}
+			}
+			// Try auto-merge first, then direct merge
+			// Try methods in order: rebase → squash → merge
+			if err := mergeWithFallback(pr.url); err != nil {
 				return errorMessage{err: err}
 			}
 		default:
@@ -66,6 +78,35 @@ func (c commander) mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd 
 		}
 		return pullRequestMerged{pr: pr}
 	}
+}
+
+// needsRebase checks if a PR branch is behind the base branch.
+// See https://docs.github.com/en/graphql/reference/enums#mergestatestatus
+func needsRebase(url string) bool {
+	status, err := gh.Run("pr", "view", url, "--json", "mergeStateStatus", "--jq", ".mergeStateStatus")
+	if err != nil {
+		return false // If we can't check, skip the rebase request
+	}
+	return status == "BEHIND"
+}
+
+// mergeWithFallback tries to merge a PR using different methods in order of preference.
+// First tries auto-merge (rebase → squash → merge), then direct merge with the same order.
+func mergeWithFallback(url string) error {
+	methods := []string{"--rebase", "--squash", "--merge"}
+	// Try auto-merge first with each method
+	for _, method := range methods {
+		if _, err := gh.Run("pr", "merge", "--auto", method, url); err == nil {
+			return nil
+		}
+	}
+	// Fall back to direct merge with each method
+	for _, method := range methods {
+		if _, err := gh.Run("pr", "merge", method, url); err == nil {
+			return nil
+		}
+	}
+	return fmt.Errorf("failed to merge PR: all merge methods failed")
 }
 
 type pullRequestRebased struct {
