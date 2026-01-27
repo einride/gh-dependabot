@@ -42,7 +42,7 @@ func newKeyMap() *keyMap {
 		),
 		mergeDependabot: key.NewBinding(
 			key.WithKeys("alt+m"),
-			key.WithHelp("alt+m", "merge (Dependabot)"),
+			key.WithHelp("alt+m", "rebase + auto-merge"),
 		),
 		rebase: key.NewBinding(
 			key.WithKeys("r"),
