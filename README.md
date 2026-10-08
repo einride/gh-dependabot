@@ -35,5 +35,6 @@ Flags:
   -h, --help            help for gh
   -s, --only-security   show only pull requests that relate to security alerts
   -o, --org string      organization to query (e.g. einride)
+  -S, --search string   additional search qualifiers, author and review-requested qualifiers replace the defaults (e.g. "-author:dependabot[bot]")
   -t, --team string     team to query (e.g. einride/team-transport-execution)
 ```

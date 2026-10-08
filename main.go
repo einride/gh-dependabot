@@ -18,6 +18,7 @@ func main() {
 	})
 	var org string
 	var team string
+	var search string
 	var securityFilter bool
 	cmd := cobra.Command{
 		Use:     "gh dependabot",
@@ -33,6 +34,7 @@ func main() {
 				username: username,
 				org:      org,
 				team:     team,
+				search:   search,
 			}
 			log.Printf("Searching \"%s\"...", query.SearchQuery())
 			page, err := loadPullRequestPage(client, query)
@@ -46,6 +48,7 @@ func main() {
 					username: username,
 					org:      org,
 					team:     team,
+					search:   search,
 					cursor:   page.EndCursor,
 				})
 				if err != nil {
@@ -70,6 +73,13 @@ func main() {
 	}
 	cmd.Flags().StringVarP(&org, "org", "o", "", "organization to query (e.g. einride)")
 	cmd.Flags().StringVarP(&team, "team", "t", "", "team to query (e.g. einride/team-transport-execution)")
+	cmd.Flags().StringVarP(
+		&search,
+		"search",
+		"S",
+		"",
+		`additional search qualifiers, author and review-requested qualifiers replace the defaults (e.g. "-author:dependabot[bot]")`,
+	)
 	cmd.Flags().
 		BoolVarP(&securityFilter, "only-security", "s", false, "show only pull requests that relate to security alerts")
 	if err := cmd.Execute(); err != nil {

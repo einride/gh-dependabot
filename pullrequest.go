@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -80,13 +81,16 @@ type pullRequestQuery struct {
 	username string
 	org      string
 	team     string
+	search   string
 	cursor   string
 }
 
 func (q pullRequestQuery) Filter() string {
 	filterStr := ""
 	if q.org == "" && q.team == "" {
-		filterStr += " review-requested:" + q.username
+		if !q.hasQualifier("review-requested:", "user-review-requested:", "team-review-requested:") {
+			filterStr += " review-requested:" + q.username
+		}
 	} else {
 		if q.org != "" {
 			filterStr += " org:" + q.org
@@ -95,12 +99,31 @@ func (q pullRequestQuery) Filter() string {
 			filterStr += " team-review-requested:" + q.team
 		}
 	}
-
+	if q.search != "" {
+		filterStr += " " + q.search
+	}
 	return filterStr
 }
 
 func (q pullRequestQuery) SearchQuery() string {
-	return "type:pr state:open archived:false author:app/dependabot" + q.Filter()
+	searchQuery := "type:pr state:open archived:false"
+	if !q.hasQualifier("author:") {
+		searchQuery += " author:app/dependabot"
+	}
+	return searchQuery + q.Filter()
+}
+
+// hasQualifier reports whether the search contains any of the qualifiers, negated or grouped,
+// e.g. "-author:dependabot[bot]" or "(review-requested:octocat".
+func (q pullRequestQuery) hasQualifier(qualifiers ...string) bool {
+	for _, field := range strings.Fields(q.search) {
+		for _, qualifier := range qualifiers {
+			if strings.HasPrefix(strings.TrimLeft(field, "-("), qualifier) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func loadPullRequestPage(client *githubv4.Client, prQuery pullRequestQuery) (*pullRequestPage, error) {
@@ -145,7 +168,7 @@ func loadPullRequestPage(client *githubv4.Client, prQuery pullRequestQuery) (*pu
 	var search searchQuery
 	if prQuery.cursor == "" {
 		var query struct {
-			Search searchQuery `graphql:"search(query: $searchQuery, type: ISSUE, first: $first)"`
+			Search searchQuery `graphql:"search(query: $searchQuery, type: ISSUE_ADVANCED, first: $first)"`
 		}
 		if err := client.Query(context.Background(), &query, variables); err != nil {
 			return nil, fmt.Errorf("load pull request page: %w", err)
@@ -153,7 +176,7 @@ func loadPullRequestPage(client *githubv4.Client, prQuery pullRequestQuery) (*pu
 		search = query.Search
 	} else {
 		var query struct {
-			Search searchQuery `graphql:"search(query: $searchQuery, type: ISSUE, first: $first, after: $after)"`
+			Search searchQuery `graphql:"search(query: $searchQuery, type: ISSUE_ADVANCED, first: $first, after: $after)"`
 		}
 		variables["after"] = githubv4.String(prQuery.cursor)
 		if err := client.Query(context.Background(), &query, variables); err != nil {
