@@ -1,6 +1,7 @@
 package gh
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,7 +14,7 @@ import (
 // Run the GitHub CLI with args.
 // Returns the output from stdout when the invocation exits successfully.
 func Run(args ...string) (string, error) {
-	cmd := exec.Command("gh", args...)
+	cmd := exec.CommandContext(context.Background(), "gh", args...)
 	var stdout, stderr strings.Builder
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
