@@ -47,6 +47,11 @@ func GolangciLint(ctx context.Context) error {
 	return sggolangcilintv2.Run(ctx, sggolangcilintv2.Config{})
 }
 
+func GolangciLintFix(ctx context.Context) error {
+	sg.Logger(ctx).Println("fixing Go files...")
+	return sggolangcilintv2.Fix(ctx, sggolangcilintv2.Config{})
+}
+
 func FormatMarkdown(ctx context.Context) error {
 	sg.Logger(ctx).Println("formatting Markdown files...")
 	return sgmdformat.Command(ctx).Run()

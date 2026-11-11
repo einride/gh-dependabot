@@ -25,7 +25,15 @@ func main() {
 		Example: "gh dependabot --org einride",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			log.Println("Resolving current user...")
-			username, err := gh.Run("api", "graphql", "-f", "query={viewer{login}}", "--jq", ".data.viewer.login")
+			username, err := gh.Run(
+				cmd.Context(),
+				"api",
+				"graphql",
+				"-f",
+				"query={viewer{login}}",
+				"--jq",
+				".data.viewer.login",
+			)
 			if err != nil {
 				return err
 			}

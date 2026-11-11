@@ -13,8 +13,8 @@ import (
 
 // Run the GitHub CLI with args.
 // Returns the output from stdout when the invocation exits successfully.
-func Run(args ...string) (string, error) {
-	cmd := exec.CommandContext(context.Background(), "gh", args...)
+func Run(ctx context.Context, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "gh", args...) //nolint:gosec // fixed binary, no shell
 	var stdout, stderr strings.Builder
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
@@ -51,7 +51,7 @@ func (g graphQLRoundTripper) RoundTrip(request *http.Request) (*http.Response, e
 		args = append(args, "-F")
 		args = append(args, fmt.Sprintf("%s=%v", k, v))
 	}
-	response, err := Run(args...)
+	response, err := Run(request.Context(), args...)
 	if err != nil {
 		return nil, fmt.Errorf("gh GraphQL round tripper: %w", err)
 	}
