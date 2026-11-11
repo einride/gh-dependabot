@@ -45,7 +45,16 @@ const (
 
 // getMergeState returns the merge state status of a PR.
 func getMergeState(url string) mergeState {
-	status, err := gh.Run("pr", "view", url, "--json", "mergeStateStatus", "--jq", ".mergeStateStatus")
+	status, err := gh.Run(
+		context.Background(),
+		"pr",
+		"view",
+		url,
+		"--json",
+		"mergeStateStatus",
+		"--jq",
+		".mergeStateStatus",
+	)
 	if err != nil {
 		return mergeStateUnknown
 	}
@@ -90,17 +99,17 @@ func (c commander) mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd 
 		case MethodSquash:
 			//nolint:errcheck // hard coded limiter burst, can't fail
 			c.limiter.Wait(context.Background())
-			if _, err := gh.Run("pr", "review", "--approve", pr.url); err != nil {
+			if _, err := gh.Run(context.Background(), "pr", "review", "--approve", pr.url); err != nil {
 				return errorMessage{err: err}
 			}
-			if _, err := gh.Run("pr", "merge", "--auto", string(method), pr.url); err != nil {
+			if _, err := gh.Run(context.Background(), "pr", "merge", "--auto", string(method), pr.url); err != nil {
 				return errorMessage{err: err}
 			}
 		case MethodDependabot:
 			//nolint:errcheck // hard coded limiter burst, can't fail
 			c.limiter.Wait(context.Background())
 			// Approve the PR first
-			if _, err := gh.Run("pr", "review", "--approve", pr.url); err != nil {
+			if _, err := gh.Run(context.Background(), "pr", "review", "--approve", pr.url); err != nil {
 				return errorMessage{err: err}
 			}
 			// Check merge state
@@ -108,7 +117,7 @@ func (c commander) mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd 
 			// Request rebase if branch is behind
 			var requestedRebase bool
 			if state == mergeStateBehind {
-				_, _ = gh.Run("pr", "comment", "--body", "@dependabot rebase", pr.url)
+				_, _ = gh.Run(context.Background(), "pr", "comment", "--body", "@dependabot rebase", pr.url)
 				requestedRebase = true
 			}
 			// Scenario 1: Try auto-merge (preferred - waits for checks)
@@ -123,9 +132,9 @@ func (c commander) mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd 
 			}
 			// Scenario 3: Behind and no auto-merge - rebase and post helpful comment
 			if !requestedRebase {
-				_, _ = gh.Run("pr", "comment", "--body", "@dependabot rebase", pr.url)
+				_, _ = gh.Run(context.Background(), "pr", "comment", "--body", "@dependabot rebase", pr.url)
 			}
-			_, _ = gh.Run("pr", "comment", "--body",
+			_, _ = gh.Run(context.Background(), "pr", "comment", "--body",
 				"⚠️ This PR needs to be rebased before it can be merged. "+
 					"Auto-merge is not enabled for this repository.\n\n"+
 					"Consider enabling auto-merge in repository settings to simplify the merge process.",
@@ -145,7 +154,7 @@ func (c commander) mergePullRequest(pr pullRequest, method mergeMethod) tea.Cmd 
 func tryAutoMerge(url string) bool {
 	methods := []string{"--rebase", "--squash", "--merge"}
 	for _, method := range methods {
-		if _, err := gh.Run("pr", "merge", "--auto", method, url); err == nil {
+		if _, err := gh.Run(context.Background(), "pr", "merge", "--auto", method, url); err == nil {
 			return true
 		}
 	}
@@ -157,7 +166,7 @@ func tryAutoMerge(url string) bool {
 func directMerge(url string) error {
 	methods := []string{"--rebase", "--squash", "--merge"}
 	for _, method := range methods {
-		if _, err := gh.Run("pr", "merge", method, url); err == nil {
+		if _, err := gh.Run(context.Background(), "pr", "merge", method, url); err == nil {
 			return nil
 		}
 	}
@@ -172,7 +181,7 @@ func (c commander) rebasePullRequest(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
 		//nolint:errcheck // hard coded limiter burst, can't fail
 		c.limiter.Wait(context.Background())
-		if _, err := gh.Run("pr", "comment", "--body", "@dependabot rebase", pr.url); err != nil {
+		if _, err := gh.Run(context.Background(), "pr", "comment", "--body", "@dependabot rebase", pr.url); err != nil {
 			return errorMessage{err: err}
 		}
 		return pullRequestRebased{pr: pr}
@@ -187,7 +196,14 @@ func (c commander) recreatePullRequest(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
 		//nolint:errcheck // hard coded limiter burst, can't fail
 		c.limiter.Wait(context.Background())
-		if _, err := gh.Run("pr", "comment", "--body", "@dependabot recreate", pr.url); err != nil {
+		if _, err := gh.Run(
+			context.Background(),
+			"pr",
+			"comment",
+			"--body",
+			"@dependabot recreate",
+			pr.url,
+		); err != nil {
 			return errorMessage{err: err}
 		}
 		return pullRequestRecreated{pr: pr}
@@ -200,7 +216,7 @@ type pullRequestOpenedInBrowser struct {
 
 func (c commander) openInBrowser(pr pullRequest) tea.Cmd {
 	return func() tea.Msg {
-		if _, err := gh.Run("pr", "view", "--web", pr.url); err != nil {
+		if _, err := gh.Run(context.Background(), "pr", "view", "--web", pr.url); err != nil {
 			return errorMessage{err: err}
 		}
 		return pullRequestOpenedInBrowser{pr: pr}

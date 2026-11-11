@@ -74,3 +74,7 @@ go-test: $(sagefile)
 .PHONY: golangci-lint
 golangci-lint: $(sagefile)
 	@$(sagefile) GolangciLint
+
+.PHONY: golangci-lint-fix
+golangci-lint-fix: $(sagefile)
+	@$(sagefile) GolangciLintFix
